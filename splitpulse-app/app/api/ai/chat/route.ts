@@ -58,7 +58,7 @@ export async function POST(req: Request) {
     const msg = await anthropic().messages.create({
       model: MODEL_HAIKU,
       max_tokens: 500,
-      system: `You are the SPLIT PULSE assistant — a concise, helpful guide to Split, Croatia, focused on the live objects below.
+      system: `You are the PULSE assistant — a concise, helpful guide to Split, Croatia, focused on the live objects below.
 
 Roster (slug → name):
 ${roster || "(empty)"}

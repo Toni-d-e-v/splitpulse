@@ -46,6 +46,7 @@ export function LocationPanel({
   onClose,
 }: Props) {
   const [detail, setDetail] = useState<LocationDetail | null>(null);
+  const [shareNotice, setShareNotice] = useState<string | null>(null);
   const geo = useGeolocation();
 
   useEffect(() => {
@@ -185,9 +186,32 @@ export function LocationPanel({
                 {`${Math.round(distanceFromLocation)}m away`}
               </button>
             )}
-            <button className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-3 font-semibold text-white/80">
+            <button
+              type="button"
+              onClick={async () => {
+                if (!detail) return;
+                const url = `${window.location.origin}/map?focus=${encodeURIComponent(detail.slug)}`;
+                const title = `${detail.name} · Pulse`;
+                const text = `Live pulse at ${detail.name}`;
+                try {
+                  if (typeof navigator.share === "function") {
+                    await navigator.share({ title, text, url });
+                    setShareNotice(null);
+                    return;
+                  }
+                  await navigator.clipboard.writeText(url);
+                  setShareNotice("Link copied");
+                  window.setTimeout(() => setShareNotice(null), 1800);
+                } catch (err) {
+                  if ((err as Error)?.name === "AbortError") return;
+                  setShareNotice("Could not share");
+                  window.setTimeout(() => setShareNotice(null), 1800);
+                }
+              }}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.04] py-3 font-semibold text-white/80 transition active:scale-[0.98]"
+            >
               <Share2 className="h-4 w-4" />
-              Share
+              {shareNotice ?? "Share"}
             </button>
           </div>
 
@@ -285,7 +309,9 @@ function LiveInstantHero({
   const meta = INSTANT_TYPE_META[instant.type];
   const author = instant.is_anonymous
     ? "Anonymous"
-    : (instant.profile?.pulse_name ?? "@guest");
+    : instant.profile?.pulse_name
+      ? `@${instant.profile.pulse_name}`
+      : "@pulse";
 
   return (
     <button

@@ -1,5 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/api/errors";
+import { attachProfiles } from "@/lib/instant/attachProfiles";
+import type { Instant } from "@/types";
 
 /**
  * GET /api/locations/[slug] — detail + active instants (no AI summary; fetch separately).
@@ -26,6 +28,11 @@ export async function GET(
     .order("created_at", { ascending: false })
     .limit(50);
 
+  const instantsWithProfiles = await attachProfiles(
+    supabase,
+    (instants ?? []) as Instant[],
+  );
+
   // Active distinct users in this zone in last 30 min (rough heuristic).
   const since = new Date(Date.now() - 30 * 60_000).toISOString();
   const { data: activeUsers } = await supabase
@@ -39,7 +46,7 @@ export async function GET(
 
   return Response.json({
     ...location,
-    active_instants: instants ?? [],
+    active_instants: instantsWithProfiles,
     active_users_count: activeUserSet.size,
   });
 }

@@ -57,7 +57,7 @@ export async function POST(req: Request) {
     const msg = await anthropic().messages.create({
       model: MODEL_HAIKU,
       max_tokens: 160,
-      system: `You help users find one object/place in SPLIT PULSE.
+      system: `You help users find one object/place in PULSE (Split, Croatia).
 Return only compact JSON: {"slug":"...", "reason":"..."}.
 Pick exactly one slug from the provided candidates. Prefer direct name/tag/type matches, then semantically relevant places, then higher pulse_score.
 Reason must be short and in the user's language.`,

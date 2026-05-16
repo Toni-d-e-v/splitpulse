@@ -10,6 +10,8 @@ interface Props {
   instants: Instant[];
   locations: Location[];
   focusSlug?: string | null;
+  /** Increment to fly the map to the user's current GPS location. */
+  flyToUserToken?: number | null;
   onZoneClick?: (slug: string) => void;
 }
 
@@ -25,6 +27,7 @@ export default function HeatMap({
   instants,
   locations,
   focusSlug,
+  flyToUserToken,
   onZoneClick,
 }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -427,6 +430,18 @@ export default function HeatMap({
     if (map.isStyleLoaded()) setData();
     else map.once("load", setData);
   }, [userLocation.coords]);
+
+  // Fly to the user's location when the parent bumps the token.
+  useEffect(() => {
+    const map = mapRef.current;
+    const coords = userLocation.coords;
+    if (!map || !coords || !flyToUserToken) return;
+    map.flyTo({
+      center: [coords.longitude, coords.latitude],
+      zoom: 17,
+      duration: 1100,
+    });
+  }, [flyToUserToken, userLocation.coords]);
 
   return (
     <div

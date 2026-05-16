@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
+  Crosshair,
   Heart,
   List,
   LogOut,
@@ -127,6 +128,7 @@ export function MapClient({
   const [panelOpen, setPanelOpen] = useState<boolean>(Boolean(focusSlug));
   const [storyOpen, setStoryOpen] = useState(false);
   const [storyInstantId, setStoryInstantId] = useState<string | null>(null);
+  const [flyToUserToken, setFlyToUserToken] = useState<number | null>(null);
   const [favoriteLocationIds, setFavoriteLocationIds] = useState<string[]>(() => {
     if (typeof window === "undefined") return [];
     const stored = window.localStorage.getItem("splitpulse:favorites");
@@ -248,7 +250,22 @@ export function MapClient({
           instants={instants}
           locations={mapLocations}
           focusSlug={activeSlug ?? focusSlug}
+          flyToUserToken={flyToUserToken}
           onZoneClick={openLocation}
+        />
+      )}
+
+      {activeTab === "map" && (
+        <MyLocationFab
+          isReady={Boolean(geo.coords)}
+          loading={geo.loading}
+          onClick={() => {
+            if (!geo.coords) {
+              geo.request();
+              return;
+            }
+            setFlyToUserToken(Date.now());
+          }}
         />
       )}
 
@@ -702,6 +719,29 @@ function FavoritesView({
         })}
       </div>
     </section>
+  );
+}
+
+function MyLocationFab({
+  isReady,
+  loading,
+  onClick,
+}: {
+  isReady: boolean;
+  loading: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label="Center map on my location"
+      className="absolute bottom-[calc(78px+env(safe-area-inset-bottom)+58px)] right-3 z-40 grid h-12 w-12 place-items-center rounded-full border border-white/10 bg-black/70 text-white shadow-[0_10px_28px_rgba(0,0,0,0.5)] backdrop-blur-xl transition active:scale-95"
+    >
+      <Crosshair
+        className={`h-5 w-5 ${isReady ? "text-[var(--accent-primary)]" : loading ? "text-white/55" : "text-white/75"}`}
+      />
+    </button>
   );
 }
 

@@ -50,7 +50,7 @@ export async function POST(req: Request) {
     const msg = await anthropic().messages.create({
       model: MODEL_HAIKU,
       max_tokens: 400,
-      system: `You are the AI brain of SPLIT PULSE, a live city heat map app.
+      system: `You are the AI brain of PULSE, a live city heat map app for Split, Croatia.
 Answer the user's question about a location based on recent Location Instants.
 Be concise and direct. If the data doesn't answer, say so honestly. Max 3-4 sentences.
 Location: ${location.name} (${location.type})

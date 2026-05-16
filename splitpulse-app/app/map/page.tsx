@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import { MapClient } from "@/components/map/MapClient";
+import { attachProfiles } from "@/lib/instant/attachProfiles";
 import type { Instant, Location } from "@/types";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +21,10 @@ export default async function MapPage({
     ]);
 
   const locations = (locationsData ?? []) as Location[];
-  const instants = (instantsData ?? []) as Instant[];
+  const instants = await attachProfiles(
+    supabase,
+    (instantsData ?? []) as Instant[],
+  );
 
   let pulseName: string | null = null;
   let memberSince: string | null = null;

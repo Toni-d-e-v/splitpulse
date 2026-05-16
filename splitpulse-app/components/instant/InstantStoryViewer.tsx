@@ -59,9 +59,12 @@ export function InstantStoryViewer({
   const instant = sortedInstants[index];
   const meta = INSTANT_TYPE_META[instant.type];
   const location = locations.find((item) => item.id === instant.location_id);
+  const authorName = instant.profile?.pulse_name;
   const author = instant.is_anonymous
     ? "Anonymous"
-    : (instant.profile?.pulse_name ?? "@guest");
+    : authorName
+      ? `@${authorName}`
+      : "@pulse";
   const previousDisabled = index === 0;
   const nextDisabled = index === sortedInstants.length - 1;
 

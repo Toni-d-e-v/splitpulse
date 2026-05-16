@@ -16,10 +16,10 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "SPLIT PULSE — live heat map of the city",
+  title: "PULSE — live heat map of the city",
   description:
     "A live heat map of the city powered by GPS-based disappearing Instants.",
-  applicationName: "SPLIT PULSE",
+  applicationName: "PULSE",
 };
 
 export const viewport: Viewport = {

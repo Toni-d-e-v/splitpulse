@@ -54,7 +54,7 @@ export function LoginClient() {
     <div className="w-full max-w-sm">
       <header className="mb-6">
         <h1 className="text-3xl font-bold leading-none tracking-tight text-white">
-          Split Pulse
+          Pulse
         </h1>
         <p className="mt-2 text-sm text-white/55">
           Pick a name to enter.
