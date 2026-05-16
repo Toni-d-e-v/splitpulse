@@ -34,11 +34,22 @@ INSERT INTO locations (name, slug, type, tags, center, radius_meters) VALUES
   ('Poljud',                'poljud',             'venue',    ARRAY['sports','concerts','stadium','hajduk'],     ST_SetSRID(ST_MakePoint(16.4319187, 43.5195411), 4326)::geography, 200)
 ON CONFLICT (slug) DO UPDATE SET center = EXCLUDED.center;
 
--- 3. INITIAL PULSE CALCULATION -------------------------------------
+-- 3. NIGHTCLUBS ----------------------------------------------------
+
+INSERT INTO locations (name, slug, type, tags, center, radius_meters) VALUES
+  ('Vanilla Club',  'vanilla-club', 'venue', ARRAY['nightlife','club','dance'],            ST_SetSRID(ST_MakePoint(16.4321831, 43.5218045), 4326)::geography, 80),
+  ('Velvet Club',   'velvet-club',  'venue', ARRAY['nightlife','club','dance'],            ST_SetSRID(ST_MakePoint(16.4338837, 43.5221728), 4326)::geography, 60),
+  ('Club 305 A.D.', 'club-305',     'venue', ARRAY['nightlife','club','old-town'],         ST_SetSRID(ST_MakePoint(16.4373455, 43.5095246), 4326)::geography, 40),
+  ('Porat Club',    'porat-club',   'venue', ARRAY['nightlife','club','live-music'],       ST_SetSRID(ST_MakePoint(16.4541268, 43.5269008), 4326)::geography, 80),
+  ('Klub Kocka',    'kocka',        'venue', ARRAY['nightlife','alternative','underground'], ST_SetSRID(ST_MakePoint(16.4501348, 43.5123806), 4326)::geography, 40),
+  ('Zenta',         'zenta',        'venue', ARRAY['nightlife','beach-club','summer'],     ST_SetSRID(ST_MakePoint(16.4556740, 43.4999571), 4326)::geography, 80)
+ON CONFLICT (slug) DO UPDATE SET center = EXCLUDED.center;
+
+-- 4. INITIAL PULSE CALCULATION -------------------------------------
 
 SELECT calculate_pulse_score(id) FROM locations;
 
--- 3. SANITY CHECK --------------------------------------------------
+-- 5. SANITY CHECK --------------------------------------------------
 DO $$
 DECLARE
   loc_count INT;

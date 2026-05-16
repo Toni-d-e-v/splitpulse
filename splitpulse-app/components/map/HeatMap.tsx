@@ -238,37 +238,45 @@ export default function HeatMap({
         },
       });
 
-      map.addLayer({
-        id: "user-accuracy",
-        type: "circle",
-        source: "user-location",
-        paint: {
-          "circle-radius": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            12, 6,
-            16, ["min", 34, ["*", ["get", "accuracy"], 0.18]],
-            19, ["min", 54, ["*", ["get", "accuracy"], 0.42]],
-          ],
-          "circle-color": "rgba(255,45,45,0.08)",
-          "circle-stroke-color": "rgba(255,45,45,0.24)",
-          "circle-stroke-width": 1,
+      // Insert the user position BENEATH location-dot so blue object
+      // markers always sit on top of the red user pin.
+      map.addLayer(
+        {
+          id: "user-accuracy",
+          type: "circle",
+          source: "user-location",
+          paint: {
+            "circle-radius": [
+              "interpolate",
+              ["linear"],
+              ["zoom"],
+              12, 6,
+              16, ["min", 34, ["*", ["get", "accuracy"], 0.18]],
+              19, ["min", 54, ["*", ["get", "accuracy"], 0.42]],
+            ],
+            "circle-color": "rgba(255,45,45,0.08)",
+            "circle-stroke-color": "rgba(255,45,45,0.24)",
+            "circle-stroke-width": 1,
+          },
         },
-      });
+        "location-dot",
+      );
 
-      map.addLayer({
-        id: "user-dot",
-        type: "circle",
-        source: "user-location",
-        paint: {
-          "circle-radius": 6,
-          "circle-color": "#ffffff",
-          "circle-stroke-color": "#ff2d2d",
-          "circle-stroke-width": 3,
-          "circle-opacity": 1,
+      map.addLayer(
+        {
+          id: "user-dot",
+          type: "circle",
+          source: "user-location",
+          paint: {
+            "circle-radius": 6,
+            "circle-color": "#ffffff",
+            "circle-stroke-color": "#ff2d2d",
+            "circle-stroke-width": 3,
+            "circle-opacity": 1,
+          },
         },
-      });
+        "location-dot",
+      );
 
       map.on("click", "location-dot", (event) => {
         const feature = event.features?.[0];
