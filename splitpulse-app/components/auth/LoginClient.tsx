@@ -2,7 +2,6 @@
 
 import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
 
 export function LoginClient() {
   const router = useRouter();
@@ -10,64 +9,44 @@ export function LoginClient() {
   const next = searchParams.get("next") ?? "/map";
 
   const [pulseName, setPulseName] = useState("");
-  const [loading, setLoading] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const finish = () => {
-    router.replace(next);
-    router.refresh();
-  };
-
-  const guest = async () => {
-    setError(null);
-    setLoading("guest");
-    try {
-      const r = await fetch("/api/auth/guest", { method: "POST" });
-      if (!r.ok)
-        throw new Error((await r.json()).error ?? "Guest sign-in failed");
-      finish();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed");
-      setLoading(null);
-    }
-  };
-
-  const setName = async () => {
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
     const name = pulseName.trim().replace(/^@/, "");
-    if (!name) return;
+    if (!name) {
+      setError("Pulse name is required.");
+      return;
+    }
     setError(null);
-    setLoading("name");
+    setLoading(true);
     try {
-      await fetch("/api/auth/guest", { method: "POST" });
-      const r = await fetch("/api/auth/pulse-name", {
+      const guestRes = await fetch("/api/auth/guest", { method: "POST" });
+      if (!guestRes.ok) {
+        const json = (await guestRes.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(json?.error ?? "Guest sign-in failed");
+      }
+
+      const nameRes = await fetch("/api/auth/pulse-name", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pulse_name: name }),
       });
-      if (!r.ok) throw new Error((await r.json()).error ?? "Pulse name failed");
-      finish();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed");
-      setLoading(null);
-    }
-  };
+      if (!nameRes.ok) {
+        const json = (await nameRes.json().catch(() => null)) as
+          | { error?: string }
+          | null;
+        throw new Error(json?.error ?? "Pulse name failed");
+      }
 
-  const google = async () => {
-    setError(null);
-    setLoading("google");
-    try {
-      const supabase = createClient();
-      const { data, error: gErr } = await supabase.auth.signInWithOAuth({
-        provider: "google",
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}`,
-        },
-      });
-      if (gErr) throw new Error(gErr.message);
-      if (data?.url) window.location.href = data.url;
+      router.replace(next);
+      router.refresh();
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed");
-      setLoading(null);
+      setLoading(false);
     }
   };
 
@@ -99,24 +78,16 @@ export function LoginClient() {
         </p>
       </header>
 
-      <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl">
-        <button
-          onClick={guest}
-          disabled={loading !== null}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent-primary)] py-3 text-sm font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)] transition active:scale-[0.98] disabled:opacity-50"
-        >
-          {loading === "guest" ? "Connecting…" : "⚡  Continue as Guest"}
-        </button>
-
-        <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.28em] text-white/40">
-          <span className="h-px flex-1 bg-white/10" />
-          or pick a name
-          <span className="h-px flex-1 bg-white/10" />
-        </div>
-
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-white/40">
+      <form
+        onSubmit={submit}
+        className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+      >
+        <label className="block">
+          <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">
+            Pulse name
+          </span>
+          <div className="relative mt-2">
+            <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-base font-bold text-white/40">
               @
             </span>
             <input
@@ -126,46 +97,21 @@ export function LoginClient() {
               autoCapitalize="off"
               autoCorrect="off"
               spellCheck={false}
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-7 pr-3 text-sm font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-white/35 focus:border-[var(--accent-primary)] focus:bg-white/[0.07]"
-              onKeyDown={(e) => e.key === "Enter" && setName()}
+              autoFocus
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3.5 pl-9 pr-3 text-base font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-white/35 focus:border-[var(--accent-primary)] focus:bg-white/[0.07]"
             />
           </div>
-          <button
-            onClick={setName}
-            disabled={loading !== null || !pulseName.trim()}
-            className="rounded-2xl bg-white px-5 text-sm font-bold text-[var(--text-inverse)] transition active:scale-[0.98] disabled:bg-white/10 disabled:text-white/40"
-          >
-            {loading === "name" ? "…" : "Go"}
-          </button>
-        </div>
+          <p className="mt-2 text-[11px] text-white/40">
+            Required. Anonymous session anchored to this name.
+          </p>
+        </label>
 
         <button
-          onClick={google}
-          disabled={loading !== null}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-3 text-sm font-semibold text-white transition hover:bg-white/[0.08] disabled:opacity-50"
+          type="submit"
+          disabled={loading || !pulseName.trim()}
+          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent-primary)] py-3 text-sm font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)] transition active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
         >
-          <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-            <path
-              fill="#fff"
-              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.76h3.56c2.08-1.92 3.28-4.74 3.28-8.09Z"
-            />
-            <path
-              fill="#fff"
-              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.56-2.76c-.99.66-2.25 1.06-3.72 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84A11 11 0 0 0 12 23Z"
-              opacity="0.85"
-            />
-            <path
-              fill="#fff"
-              d="M5.84 14.11A6.6 6.6 0 0 1 5.5 12c0-.73.13-1.44.34-2.11V7.05H2.18a11 11 0 0 0 0 9.9l3.66-2.84Z"
-              opacity="0.7"
-            />
-            <path
-              fill="#fff"
-              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1A11 11 0 0 0 2.18 7.05l3.66 2.84C6.71 7.3 9.14 5.38 12 5.38Z"
-              opacity="0.6"
-            />
-          </svg>
-          {loading === "google" ? "Opening…" : "Continue with Google"}
+          {loading ? "Entering…" : "⚡  Enter the pulse"}
         </button>
 
         {error && (
@@ -173,10 +119,10 @@ export function LoginClient() {
             {error}
           </div>
         )}
-      </section>
+      </form>
 
       <p className="mt-4 text-center text-[10px] uppercase tracking-[0.24em] text-white/35">
-        Hackathon demo · By continuing you agree
+        Hackathon demo · No password, no email
       </p>
     </div>
   );
