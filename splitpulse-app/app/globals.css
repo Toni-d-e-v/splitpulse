@@ -79,6 +79,22 @@ html, body {
   color: var(--text-primary);
   font-family: var(--font-dm-sans), -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* Block the browser's own pinch/double-tap zoom on the UI. Mapbox
+     handles pinch + double-tap on its canvas internally, so the map
+     itself is unaffected by this rule (the canvas opts back in via
+     touch-action:none / pan-x set by Mapbox). */
+  touch-action: manipulation;
+  /* iOS Safari otherwise rubber-bands the page when you scroll inside
+     a sheet — kills the impression of a native screen. */
+  overscroll-behavior: none;
+}
+
+/* iOS Safari auto-zooms on focus when an input's font-size is below
+   16px. Force the floor so typing never triggers an accidental zoom. */
+input,
+textarea,
+select {
+  font-size: max(16px, 1em);
 }
 
 .app-shell {

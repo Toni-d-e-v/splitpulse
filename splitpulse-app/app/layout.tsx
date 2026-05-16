@@ -26,6 +26,12 @@ export const viewport: Viewport = {
   themeColor: "#0a0a1a",
   width: "device-width",
   initialScale: 1,
+  // Lock browser zoom on the UI. Mapbox has its own pinch handler inside
+  // the map canvas, so users can still zoom the map — but the chrome
+  // (search bar, bottom sheet, etc.) no longer zooms accidentally while
+  // typing or closing panels.
+  maximumScale: 1,
+  userScalable: false,
   viewportFit: "cover",
 };
 
