@@ -287,9 +287,11 @@ export function MapClient({
           instants={instants}
           locations={locations}
           onSelectInstant={(slug, instantId) => {
-            openLocation(slug);
-            openStory(instantId);
             setActiveTab("map");
+            openLocation(slug);
+            // Let the map fly and the location panel slide up first,
+            // then open the story focused on the chosen Instant.
+            window.setTimeout(() => openStory(instantId), 1100);
           }}
         />
       )}
