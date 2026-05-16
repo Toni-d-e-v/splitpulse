@@ -1,0 +1,183 @@
+@import "tailwindcss";
+
+/* ────────────────────────────────────────────────────────────────────
+   SPLIT PULSE — Design Tokens
+   Source: SPLIT_PULSE_TECHNICAL_SPEC.md §20
+   Adapted to Tailwind v4 `@theme` syntax.
+   ──────────────────────────────────────────────────────────────────── */
+
+:root {
+  --bg-deep:            #0a0a1a;
+  --bg-surface:         rgba(255, 255, 255, 0.06);
+  --bg-surface-hover:   rgba(255, 255, 255, 0.10);
+  --bg-surface-active:  rgba(255, 255, 255, 0.14);
+
+  --glass-bg:           rgba(15, 15, 35, 0.65);
+  --glass-bg-heavy:     rgba(10, 10, 30, 0.80);
+  --glass-border:       rgba(255, 255, 255, 0.08);
+  --glass-border-light: rgba(255, 255, 255, 0.12);
+  --glass-blur:         20px;
+  --glass-blur-heavy:   30px;
+
+  --text-primary:       #ffffffee;
+  --text-secondary:     #ffffff80;
+  --text-tertiary:      #ffffff50;
+  --text-inverse:       #0a0a1a;
+
+  --pulse-quiet:        #4a5568;
+  --pulse-active:       #00d4ff;
+  --pulse-rising:       #00e88f;
+  --pulse-trending:     #ffb800;
+  --pulse-high:         #ff4444;
+  --pulse-live-event:   #c840ff;
+
+  --accent-primary:     #00d4ff;
+  --accent-glow:        rgba(0, 212, 255, 0.25);
+
+  --instant-photo:      #00d4ff;
+  --instant-text:       #ffffff80;
+  --instant-crowd:      #ffb800;
+  --instant-question:   #c840ff;
+  --instant-help:       #ff6b6b;
+  --instant-event:      #00e88f;
+  --instant-recommend:  #ff9f43;
+  --instant-warning:    #ff4444;
+}
+
+@theme inline {
+  --color-deep:           var(--bg-deep);
+  --color-accent:         var(--accent-primary);
+
+  --color-pulse-quiet:    var(--pulse-quiet);
+  --color-pulse-active:   var(--pulse-active);
+  --color-pulse-rising:   var(--pulse-rising);
+  --color-pulse-trending: var(--pulse-trending);
+  --color-pulse-high:     var(--pulse-high);
+  --color-pulse-live:     var(--pulse-live-event);
+
+  --color-instant-photo:     var(--instant-photo);
+  --color-instant-text:      var(--instant-text);
+  --color-instant-crowd:     var(--instant-crowd);
+  --color-instant-question:  var(--instant-question);
+  --color-instant-help:      var(--instant-help);
+  --color-instant-event:     var(--instant-event);
+  --color-instant-recommend: var(--instant-recommend);
+  --color-instant-warning:   var(--instant-warning);
+
+  --font-sans: var(--font-dm-sans), "DM Sans", -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+
+  --radius-glass: 20px;
+
+  --shadow-glass: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-glow:  0 0 20px rgba(0, 212, 255, 0.25);
+  --shadow-pulse: 0 0 40px rgba(255, 68, 68, 0.3);
+}
+
+html, body {
+  background: var(--bg-deep);
+  color: var(--text-primary);
+  font-family: var(--font-dm-sans), -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-shell {
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.glass-panel {
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-glass);
+  box-shadow: var(--shadow-glass);
+}
+.glass-panel-heavy {
+  background: var(--glass-bg-heavy);
+  backdrop-filter: blur(var(--glass-blur-heavy));
+  -webkit-backdrop-filter: blur(var(--glass-blur-heavy));
+  border: 1px solid var(--glass-border-light);
+  border-radius: 28px;
+  box-shadow: var(--shadow-glass);
+}
+
+.pulse-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.pulse-badge[data-status="quiet"]      { background: rgba(74,85,104,0.3);  color: #8896a8; }
+.pulse-badge[data-status="active"]     { background: rgba(0,212,255,0.15); color: #00d4ff; }
+.pulse-badge[data-status="rising"]     { background: rgba(0,232,143,0.15); color: #00e88f; }
+.pulse-badge[data-status="trending"]   { background: rgba(255,184,0,0.15); color: #ffb800; }
+.pulse-badge[data-status="high_pulse"] { background: rgba(255,68,68,0.2);  color: #ff4444; box-shadow: var(--shadow-pulse); }
+.pulse-badge[data-status="live_event"] { background: rgba(200,64,255,0.2); color: #c840ff; }
+
+.instant-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--glass-border);
+  border-radius: 14px;
+  padding: 16px;
+  transition: background 0.2s ease;
+}
+.instant-card:active { background: var(--bg-surface-active); }
+.instant-card[data-type="event"]    { border-left: 3px solid var(--instant-event); }
+.instant-card[data-type="crowd"]    { border-left: 3px solid var(--instant-crowd); }
+.instant-card[data-type="question"] { border-left: 3px solid var(--instant-question); }
+.instant-card[data-type="help"]     { border-left: 3px solid var(--instant-help); }
+.instant-card[data-type="warning"]  { border-left: 3px solid var(--instant-warning); }
+.instant-card[data-type="photo"]    { border-left: 3px solid var(--instant-photo); }
+.instant-card[data-type="recommendation"] { border-left: 3px solid var(--instant-recommend); }
+
+.instant-fab {
+  position: fixed;
+  bottom: calc(32px + env(safe-area-inset-bottom));
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--accent-primary);
+  color: var(--text-inverse);
+  border: none;
+  border-radius: 9999px;
+  padding: 14px 28px;
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: var(--shadow-glow), var(--shadow-glass);
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  z-index: 50;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.instant-fab:active { transform: translateX(-50%) scale(0.95); }
+
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+.pulse-ring { animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.2, 1) infinite; }
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.instant-enter { animation: fade-up 0.3s ease-out; }
+
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+.sheet-enter { animation: slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1); }
+
+@keyframes glow-throb {
+  0%, 100% { box-shadow: 0 0 12px rgba(255,184,0,0.2); }
+  50%      { box-shadow: 0 0 24px rgba(255,184,0,0.45); }
+}
+.badge-trending { animation: glow-throb 2s ease-in-out infinite; }
