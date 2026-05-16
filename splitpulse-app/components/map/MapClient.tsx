@@ -9,7 +9,7 @@ import {
   Heart,
   List,
   LogOut,
-  Map,
+  Map as MapIcon,
   MapPin,
   Search,
   User,
@@ -29,8 +29,8 @@ const HeatMap = dynamic(() => import("@/components/map/HeatMap"), {
 
 type AppTab = "map" | "objects" | "people" | "profile";
 
-const TAB_ITEMS: Array<{ id: AppTab; label: string; icon: typeof Map }> = [
-  { id: "map", label: "Map", icon: Map },
+const TAB_ITEMS: Array<{ id: AppTab; label: string; icon: typeof MapIcon }> = [
+  { id: "map", label: "Map", icon: MapIcon },
   { id: "objects", label: "Objects", icon: List },
   { id: "people", label: "Live people", icon: Users },
   { id: "profile", label: "Profile", icon: User },
