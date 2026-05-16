@@ -288,10 +288,18 @@ export function MapClient({
           locations={locations}
           onSelectInstant={(slug, instantId) => {
             setActiveTab("map");
-            openLocation(slug);
-            // Let the map fly and the location panel slide up first,
-            // then open the story focused on the chosen Instant.
-            window.setTimeout(() => openStory(instantId), 1100);
+            // Focus the map on the location WITHOUT opening the panel —
+            // we go straight to the Instant story instead.
+            setActiveSlug(slug);
+            const loc = locations.find((l) => l.slug === slug);
+            if (loc) setActiveLocation(loc.id);
+            if (openTimerRef.current) {
+              window.clearTimeout(openTimerRef.current);
+              openTimerRef.current = null;
+            }
+            setPanelOpen(false);
+            // Wait for the flyTo to land, then pop the story.
+            window.setTimeout(() => openStory(instantId), 1000);
           }}
         />
       )}
