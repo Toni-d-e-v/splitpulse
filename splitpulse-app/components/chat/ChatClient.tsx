@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ArrowLeft, Bot, MapPin, Send } from "lucide-react";
+import { Markdown } from "@/components/chat/Markdown";
 
 interface Message {
   id: string;
@@ -220,8 +221,8 @@ function ChatBubble({
   return (
     <div className="flex justify-start">
       <div className="max-w-[88%] space-y-2">
-        <div className="rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm leading-snug text-white">
-          {message.content}
+        <div className="rounded-3xl rounded-bl-md border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm leading-snug text-white/90">
+          <Markdown text={message.content} />
         </div>
         {message.slug && (
           <button

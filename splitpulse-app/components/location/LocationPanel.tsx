@@ -241,7 +241,7 @@ function LiveInstantsSection({
             onClick={() => onOpenInstant(latest.id)}
             className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-[var(--text-inverse)]"
           >
-            Open stories
+            Open instants
           </button>
         )}
       </div>
