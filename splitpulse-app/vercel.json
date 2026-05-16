@@ -1,8 +1,4 @@
 {
   "framework": "nextjs",
-  "regions": ["fra1"],
-  "crons": [
-    { "path": "/api/cron/recalc", "schedule": "*/2 * * * *" },
-    { "path": "/api/cron/cleanup", "schedule": "0 * * * *" }
-  ]
+  "regions": ["fra1"]
 }
