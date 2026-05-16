@@ -221,7 +221,6 @@ export default function HeatMap({
         id: "location-label",
         type: "symbol",
         source: "locations",
-        filter: ["==", ["get", "slug"], "tech-park"],
         layout: {
           "text-field": ["get", "name"],
           "text-size": 11,
