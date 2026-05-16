@@ -13,6 +13,7 @@ import {
   MapPin,
   Search,
   User,
+  Users,
   X,
 } from "lucide-react";
 import { useMapStore } from "@/stores/mapStore";
@@ -26,12 +27,12 @@ const HeatMap = dynamic(() => import("@/components/map/HeatMap"), {
   loading: () => <MapLoadingShimmer />,
 });
 
-type AppTab = "map" | "objects" | "favorites" | "profile";
+type AppTab = "map" | "objects" | "people" | "profile";
 
 const TAB_ITEMS: Array<{ id: AppTab; label: string; icon: typeof Map }> = [
   { id: "map", label: "Map", icon: Map },
   { id: "objects", label: "Objects", icon: List },
-  { id: "favorites", label: "Favorites", icon: Heart },
+  { id: "people", label: "Live people", icon: Users },
   { id: "profile", label: "Profile", icon: User },
 ];
 
@@ -280,15 +281,14 @@ export function MapClient({
         />
       )}
 
-      {activeTab === "favorites" && (
-        <FavoritesView
-          locations={locations.filter((location) =>
-            favoriteLocationIds.includes(location.id),
-          )}
+      {activeTab === "people" && (
+        <LivePeopleView
           instants={instants}
-          coords={geo.coords}
-          onToggleFavorite={toggleFavorite}
-          onSelect={(location) => openLocation(location.slug)}
+          locations={locations}
+          onSelectLocation={(slug) => {
+            openLocation(slug);
+            setActiveTab("map");
+          }}
         />
       )}
 
@@ -520,7 +520,14 @@ function ObjectsListView({
   onToggleFavorite: (locationId: string) => void;
   onSelect: (location: Location) => void;
 }) {
-  const sortedLocations = [...locations].sort((a, b) => {
+  const [filter, setFilter] = useState<"all" | "favorites">("all");
+
+  const filteredLocations =
+    filter === "favorites"
+      ? locations.filter((location) => favoriteLocationIds.includes(location.id))
+      : locations;
+
+  const sortedLocations = [...filteredLocations].sort((a, b) => {
     if (coords) {
       return distanceMeters(coords, a) - distanceMeters(coords, b);
     }
@@ -532,16 +539,53 @@ function ObjectsListView({
     <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-3 pb-40 pt-[max(18px,env(safe-area-inset-top))]">
       <div className="mb-3 px-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
-          {coords ? "Nearby first" : "By pulse"}
+          {filter === "favorites"
+            ? "Saved"
+            : coords
+              ? "Nearby first"
+              : "By pulse"}
         </p>
         <h2 className="text-xl font-bold text-white">
-          {sortedLocations.length} objects
+          {sortedLocations.length}
+          {" "}
+          {filter === "favorites" ? "favorite" : "object"}
+          {sortedLocations.length === 1 ? "" : "s"}
         </h2>
+      </div>
+
+      <div className="mb-3 flex gap-2 px-2">
+        <SegmentedButton
+          active={filter === "all"}
+          onClick={() => setFilter("all")}
+          icon={<List className="h-3.5 w-3.5" />}
+        >
+          All
+        </SegmentedButton>
+        <SegmentedButton
+          active={filter === "favorites"}
+          onClick={() => setFilter("favorites")}
+          icon={
+            <Heart
+              className={`h-3.5 w-3.5 ${filter === "favorites" ? "fill-current" : ""}`}
+            />
+          }
+        >
+          Favorites
+          {favoriteLocationIds.length > 0 && (
+            <span
+              className={`ml-1 rounded-full px-1.5 py-0.5 text-[10px] font-bold ${filter === "favorites" ? "bg-black/15" : "bg-white/15"}`}
+            >
+              {favoriteLocationIds.length}
+            </span>
+          )}
+        </SegmentedButton>
       </div>
       <div className="space-y-2">
         {sortedLocations.length === 0 && (
           <p className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-6 text-center text-sm text-white/55">
-            No objects in this category.
+            {filter === "favorites"
+              ? "No favorites yet. Tap the heart on any object to save it."
+              : "No objects in this category."}
           </p>
         )}
         {sortedLocations.map((location) => {
@@ -622,102 +666,156 @@ function ObjectsListView({
   );
 }
 
-function FavoritesView({
-  locations,
-  instants,
-  coords,
-  onToggleFavorite,
-  onSelect,
+function SegmentedButton({
+  active,
+  onClick,
+  icon,
+  children,
 }: {
-  locations: Location[];
-  instants: Instant[];
-  coords: { latitude: number; longitude: number; accuracy: number } | null;
-  onToggleFavorite: (locationId: string) => void;
-  onSelect: (location: Location) => void;
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  children: React.ReactNode;
 }) {
-  if (locations.length === 0) {
-    return (
-      <section className="absolute inset-0 z-20 flex bg-deep px-5 pb-40 pt-[max(24px,env(safe-area-inset-top))]">
-        <div className="m-auto max-w-sm text-center">
-          <Heart className="mx-auto h-10 w-10 text-white/35" />
-          <h2 className="mt-4 text-xl font-bold text-white">No favorites yet</h2>
-          <p className="mt-2 text-sm leading-snug text-white/55">
-            Tap the heart on any object in the Objects tab or in a place panel
-            to save it here.
-          </p>
-        </div>
-      </section>
-    );
-  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-bold transition ${
+        active
+          ? "bg-white text-[var(--text-inverse)]"
+          : "border border-white/10 bg-white/[0.04] text-white/65"
+      }`}
+    >
+      {icon}
+      {children}
+    </button>
+  );
+}
 
-  const sorted = [...locations].sort((a, b) => {
-    if (coords) return distanceMeters(coords, a) - distanceMeters(coords, b);
-    return a.name.localeCompare(b.name);
-  });
+function timeAgoCompact(iso: string): string {
+  const date = new Date(iso);
+  const seconds = Math.max(0, Math.floor((Date.now() - date.getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours}h`;
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function LivePeopleView({
+  instants,
+  locations,
+  onSelectLocation,
+}: {
+  instants: Instant[];
+  locations: Location[];
+  onSelectLocation: (slug: string) => void;
+}) {
+  const locationsById = useMemo(
+    () => new Map(locations.map((location) => [location.id, location])),
+    [locations],
+  );
+
+  // Group instants by user. Skip anonymous + users with no profile.
+  const people = useMemo(() => {
+    const byUser = new Map<
+      string,
+      {
+        userId: string;
+        pulseName: string;
+        latest: Instant;
+        count: number;
+      }
+    >();
+    for (const instant of instants) {
+      if (instant.is_anonymous) continue;
+      const userId = instant.user_id;
+      const pulseName = instant.profile?.pulse_name ?? null;
+      if (!userId || !pulseName) continue;
+      const current = byUser.get(userId);
+      if (!current) {
+        byUser.set(userId, {
+          userId,
+          pulseName,
+          latest: instant,
+          count: 1,
+        });
+      } else {
+        current.count += 1;
+        if (
+          new Date(instant.created_at).getTime() >
+          new Date(current.latest.created_at).getTime()
+        ) {
+          current.latest = instant;
+        }
+      }
+    }
+    return Array.from(byUser.values()).sort(
+      (a, b) =>
+        new Date(b.latest.created_at).getTime() -
+        new Date(a.latest.created_at).getTime(),
+    );
+  }, [instants]);
 
   return (
     <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-3 pb-40 pt-[max(18px,env(safe-area-inset-top))]">
       <div className="mb-3 px-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
-          Saved
+          Live now
         </p>
         <h2 className="text-xl font-bold text-white">
-          {sorted.length} favorite{sorted.length === 1 ? "" : "s"}
+          {people.length} {people.length === 1 ? "person" : "people"}
         </h2>
+        <p className="mt-1 text-xs text-white/45">
+          Pulse names posting active Instants right now.
+        </p>
       </div>
-      <div className="space-y-2">
-        {sorted.map((location) => {
-          const count = instants.filter(
-            (instant) => instant.location_id === location.id,
-          ).length;
-          const distance = coords ? distanceMeters(coords, location) : null;
-          const dot = PULSE_DOT[location.pulse_status] ?? PULSE_DOT.quiet;
-          return (
-            <div
-              key={location.id}
-              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3"
-            >
+
+      {people.length === 0 ? (
+        <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-10 text-center">
+          <Users className="mx-auto h-8 w-8 text-white/35" />
+          <p className="mt-3 text-sm font-semibold text-white/70">
+            Nobody live right now
+          </p>
+          <p className="mt-1 text-xs text-white/45">
+            Be the first — post an Instant to light up the map.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {people.map((person) => {
+            const location = locationsById.get(person.latest.location_id);
+            return (
               <button
+                key={person.userId}
                 type="button"
-                onClick={() => onSelect(location)}
-                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                onClick={() => {
+                  if (location) onSelectLocation(location.slug);
+                }}
+                className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-left transition active:scale-[0.99]"
               >
-                <span
-                  aria-hidden
-                  className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/[0.05]"
-                  style={{ boxShadow: `inset 0 0 0 2px ${dot}` }}
-                >
-                  <span
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: dot, boxShadow: `0 0 8px ${dot}` }}
-                  />
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-base font-bold text-black">
+                  {person.pulseName[0]?.toUpperCase()}
                 </span>
-                <span className="min-w-0">
+                <span className="min-w-0 flex-1">
                   <span className="block truncate text-base font-bold text-white">
-                    {location.name}
+                    @{person.pulseName}
                   </span>
-                  <span className="text-xs text-white/50">
-                    {titleCase(location.type)}
-                    {" · "}
-                    {distance === null
-                      ? `Pulse ${location.pulse_score}`
-                      : `${Math.round(distance)}m`}
-                    {count > 0 ? ` · ${count} live` : ""}
+                  <span className="block truncate text-xs text-white/50">
+                    {location ? `at ${location.name}` : "Live"}
+                    {person.count > 1 ? ` · ${person.count} instants` : ""}
                   </span>
                 </span>
+                <span className="shrink-0 text-[11px] font-semibold text-white/55">
+                  {timeAgoCompact(person.latest.created_at)}
+                </span>
               </button>
-              <button
-                type="button"
-                aria-label="Remove favorite"
-                onClick={() => onToggleFavorite(location.id)}
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[var(--text-inverse)] transition active:scale-95"
-              >
-                <Heart className="h-4 w-4 fill-current" />
-              </button>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }
