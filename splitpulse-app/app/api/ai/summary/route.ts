@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/api/errors";
 import { AISummarySchema } from "@/lib/api/schemas";
 import { getCached, setCached } from "@/lib/api/ai-cache";
-import { anthropic, MODEL_SONNET, extractText } from "@/lib/anthropic";
+import { anthropic, MODEL_HAIKU, extractText } from "@/lib/anthropic";
 import { timeAgo } from "@/lib/instant/timeAgo";
 
 /**
@@ -59,7 +59,7 @@ export async function POST(req: Request) {
 
   try {
     const msg = await anthropic().messages.create({
-      model: MODEL_SONNET,
+      model: MODEL_HAIKU,
       max_tokens: 300,
       system: `You are the AI brain of SPLIT PULSE, a live city heat map app.
 Summarize what is happening at a location based on recent Location Instants.

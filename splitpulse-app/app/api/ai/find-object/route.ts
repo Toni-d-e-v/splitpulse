@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { errorResponse } from "@/lib/api/errors";
-import { anthropic, extractText, MODEL_SONNET } from "@/lib/anthropic";
+import { anthropic, extractText, MODEL_HAIKU } from "@/lib/anthropic";
 
 const FindObjectSchema = z.object({
   query: z.string().min(2).max(280),
@@ -55,7 +55,7 @@ export async function POST(req: Request) {
 
   try {
     const msg = await anthropic().messages.create({
-      model: MODEL_SONNET,
+      model: MODEL_HAIKU,
       max_tokens: 160,
       system: `You help users find one object/place in SPLIT PULSE.
 Return only compact JSON: {"slug":"...", "reason":"..."}.

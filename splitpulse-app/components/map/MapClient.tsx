@@ -10,6 +10,7 @@ import {
   LogOut,
   Map,
   MapPin,
+  MessageSquare,
   Search,
   User,
   X,
@@ -356,6 +357,7 @@ function TopSearchBar({
   onAskAi: (query: string) => Promise<string>;
   onSelect: (location: Location) => void;
 }) {
+  const router = useRouter();
   const showResults = value.trim().length > 0;
   const [aiLoading, setAiLoading] = useState(false);
   const [aiMessage, setAiMessage] = useState<string | null>(null);
@@ -372,6 +374,11 @@ function TopSearchBar({
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const openChat = () => {
+    const q = value.trim();
+    router.push(q ? `/chat?q=${encodeURIComponent(q)}` : "/chat");
   };
 
   return (
@@ -403,6 +410,14 @@ function TopSearchBar({
         >
           <Bot className="h-4 w-4" />
         </button>
+        <button
+          type="button"
+          onClick={openChat}
+          className="grid h-8 min-w-8 place-items-center rounded-full bg-white/10 text-white"
+          aria-label="Open Pulse AI chat"
+        >
+          <MessageSquare className="h-4 w-4" />
+        </button>
       </div>
 
       {showResults && (
@@ -420,6 +435,14 @@ function TopSearchBar({
           >
             <Bot className="h-4 w-4" />
             {aiLoading ? "Finding..." : `Ask AI: "${value.trim()}"`}
+          </button>
+          <button
+            type="button"
+            onClick={openChat}
+            className="mb-1 flex w-full items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left text-sm font-semibold text-white"
+          >
+            <MessageSquare className="h-4 w-4" />
+            Continue in chat
           </button>
           {locations.length === 0 ? (
             <div className="px-3 py-3 text-sm text-white/55">
