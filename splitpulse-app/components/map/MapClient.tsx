@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Bot,
   Crosshair,
+  Flame,
   Heart,
   List,
   LogOut,
@@ -13,9 +14,9 @@ import {
   MapPin,
   Search,
   User,
-  Users,
   X,
 } from "lucide-react";
+import { INSTANT_TYPE_META } from "@/lib/instant/typeMeta";
 import { useMapStore } from "@/stores/mapStore";
 import { LocationPanel } from "@/components/location/LocationPanel";
 import { InstantStoryViewer } from "@/components/instant/InstantStoryViewer";
@@ -27,12 +28,12 @@ const HeatMap = dynamic(() => import("@/components/map/HeatMap"), {
   loading: () => <MapLoadingShimmer />,
 });
 
-type AppTab = "map" | "objects" | "people" | "profile";
+type AppTab = "map" | "objects" | "trending" | "profile";
 
 const TAB_ITEMS: Array<{ id: AppTab; label: string; icon: typeof MapIcon }> = [
   { id: "map", label: "Map", icon: MapIcon },
   { id: "objects", label: "Objects", icon: List },
-  { id: "people", label: "Live people", icon: Users },
+  { id: "trending", label: "Trending", icon: Flame },
   { id: "profile", label: "Profile", icon: User },
 ];
 
@@ -281,12 +282,13 @@ export function MapClient({
         />
       )}
 
-      {activeTab === "people" && (
-        <LivePeopleView
+      {activeTab === "trending" && (
+        <TrendingView
           instants={instants}
           locations={locations}
-          onSelectLocation={(slug) => {
+          onSelectInstant={(slug, instantId) => {
             openLocation(slug);
+            openStory(instantId);
             setActiveTab("map");
           }}
         />
@@ -704,80 +706,70 @@ function timeAgoCompact(iso: string): string {
   return `${Math.floor(hours / 24)}d`;
 }
 
-function LivePeopleView({
+function expiresInCompact(iso: string): string {
+  const ms = new Date(iso).getTime() - Date.now();
+  if (ms <= 0) return "expired";
+  const seconds = Math.floor(ms / 1000);
+  if (seconds < 60) return `${seconds}s`;
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+  const hours = Math.floor(minutes / 60);
+  const restMinutes = minutes % 60;
+  if (hours < 24) {
+    return restMinutes > 0 ? `${hours}h ${restMinutes}m` : `${hours}h`;
+  }
+  return `${Math.floor(hours / 24)}d`;
+}
+
+function TrendingView({
   instants,
   locations,
-  onSelectLocation,
+  onSelectInstant,
 }: {
   instants: Instant[];
   locations: Location[];
-  onSelectLocation: (slug: string) => void;
+  onSelectInstant: (locationSlug: string, instantId: string) => void;
 }) {
   const locationsById = useMemo(
     () => new Map(locations.map((location) => [location.id, location])),
     [locations],
   );
 
-  // Group instants by user. Skip anonymous + users with no profile.
-  const people = useMemo(() => {
-    const byUser = new Map<
-      string,
-      {
-        userId: string;
-        pulseName: string;
-        latest: Instant;
-        count: number;
-      }
-    >();
-    for (const instant of instants) {
-      if (instant.is_anonymous) continue;
-      const userId = instant.user_id;
-      const pulseName = instant.profile?.pulse_name ?? null;
-      if (!userId || !pulseName) continue;
-      const current = byUser.get(userId);
-      if (!current) {
-        byUser.set(userId, {
-          userId,
-          pulseName,
-          latest: instant,
-          count: 1,
-        });
-      } else {
-        current.count += 1;
-        if (
-          new Date(instant.created_at).getTime() >
-          new Date(current.latest.created_at).getTime()
-        ) {
-          current.latest = instant;
-        }
-      }
-    }
-    return Array.from(byUser.values()).sort(
-      (a, b) =>
-        new Date(b.latest.created_at).getTime() -
-        new Date(a.latest.created_at).getTime(),
-    );
-  }, [instants]);
+  // Tick once a minute so the expires-in label re-renders.
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((current) => current + 1), 30_000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  const trending = useMemo(
+    () =>
+      [...instants].sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+      ),
+    [instants],
+  );
 
   return (
     <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-3 pb-40 pt-[max(18px,env(safe-area-inset-top))]">
       <div className="mb-3 px-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
-          Live now
+          Latest Instants
         </p>
         <h2 className="text-xl font-bold text-white">
-          {people.length} {people.length === 1 ? "person" : "people"}
+          Trending
         </h2>
         <p className="mt-1 text-xs text-white/45">
-          Pulse names posting active Instants right now.
+          Every Instant lives 24h. Tap one to open it on the map.
         </p>
       </div>
 
-      {people.length === 0 ? (
+      {trending.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-10 text-center">
-          <Users className="mx-auto h-8 w-8 text-white/35" />
+          <Flame className="mx-auto h-8 w-8 text-white/35" />
           <p className="mt-3 text-sm font-semibold text-white/70">
-            Nobody live right now
+            Nothing trending right now
           </p>
           <p className="mt-1 text-xs text-white/45">
             Be the first — post an Instant to light up the map.
@@ -785,31 +777,57 @@ function LivePeopleView({
         </div>
       ) : (
         <div className="space-y-2">
-          {people.map((person) => {
-            const location = locationsById.get(person.latest.location_id);
+          {trending.map((instant) => {
+            const location = locationsById.get(instant.location_id);
+            const meta = INSTANT_TYPE_META[instant.type];
+            const author = instant.is_anonymous
+              ? "Anonymous"
+              : instant.profile?.pulse_name
+                ? `@${instant.profile.pulse_name}`
+                : "@pulse";
             return (
               <button
-                key={person.userId}
+                key={instant.id}
                 type="button"
                 onClick={() => {
-                  if (location) onSelectLocation(location.slug);
+                  if (location) onSelectInstant(location.slug, instant.id);
                 }}
-                className="flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-left transition active:scale-[0.99]"
+                className="flex w-full items-stretch gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3 text-left transition active:scale-[0.99]"
               >
-                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-white text-base font-bold text-black">
-                  {person.pulseName[0]?.toUpperCase()}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block truncate text-base font-bold text-white">
-                    @{person.pulseName}
+                {instant.image_url ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={instant.image_url}
+                    alt=""
+                    className="h-16 w-16 shrink-0 rounded-xl object-cover"
+                  />
+                ) : (
+                  <span className="grid h-16 w-16 shrink-0 place-items-center rounded-xl bg-white/[0.04] text-2xl">
+                    {meta.icon}
                   </span>
-                  <span className="block truncate text-xs text-white/50">
-                    {location ? `at ${location.name}` : "Live"}
-                    {person.count > 1 ? ` · ${person.count} instants` : ""}
+                )}
+                <span className="flex min-w-0 flex-1 flex-col justify-between">
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-white/55">
+                      <span aria-hidden>{meta.icon}</span>
+                      <span>{meta.label}</span>
+                    </span>
+                    <span className="mt-0.5 block truncate text-sm font-bold leading-snug text-white">
+                      {instant.content?.trim() || meta.label}
+                    </span>
                   </span>
-                </span>
-                <span className="shrink-0 text-[11px] font-semibold text-white/55">
-                  {timeAgoCompact(person.latest.created_at)}
+                  <span className="mt-1 flex items-center justify-between gap-2 text-[11px] text-white/55">
+                    <span className="min-w-0 truncate">
+                      {author}
+                      {location ? ` · ${location.name}` : ""}
+                    </span>
+                    <span className="shrink-0 font-semibold text-white/70">
+                      {timeAgoCompact(instant.created_at)} ·{" "}
+                      <span className="text-[var(--accent-primary)]">
+                        {expiresInCompact(instant.expires_at)} left
+                      </span>
+                    </span>
+                  </span>
                 </span>
               </button>
             );

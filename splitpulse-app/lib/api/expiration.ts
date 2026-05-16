@@ -1,16 +1,10 @@
 import type { InstantType } from "@/types";
 
-// Source: SPLIT_PULSE_TECHNICAL_SPEC.md §5.1
-const EXPIRY_MINUTES: Record<InstantType, number> = {
-  crowd: 60,
-  event: 480,
-  help: 120,
-  question: 240,
-  recommendation: 360,
-  warning: 120,
-  photo: 1440,
-  text: 1440,
-};
+// All Instants live for 24h regardless of type. Keep the param so the
+// signature stays drop-in if we ever want per-type variation back.
+const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
-export const calcExpiresAt = (type: InstantType): Date =>
-  new Date(Date.now() + (EXPIRY_MINUTES[type] ?? 1440) * 60_000);
+export const EXPIRY_HOURS = 24;
+
+export const calcExpiresAt = (_type: InstantType): Date =>
+  new Date(Date.now() + ONE_DAY_MS);
