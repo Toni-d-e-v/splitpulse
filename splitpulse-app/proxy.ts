@@ -35,15 +35,7 @@ export async function proxy(req: NextRequest) {
   // Auth gate: unauthenticated users see /login (incl. landing).
   const path = req.nextUrl.pathname;
   const PUBLIC_PATHS = ["/login", "/auth/callback", "/api/og"];
-  const isPublicRead =
-    req.method === "GET" &&
-    (path === "/" ||
-      path === "/map" ||
-      path === "/api/locations" ||
-      /^\/api\/locations\/[^/]+$/.test(path) ||
-      path === "/api/instants");
   const isPublic =
-    isPublicRead ||
     PUBLIC_PATHS.some((p) => path === p || path.startsWith(p + "/")) ||
     path.startsWith("/api/auth/") ||
     path.startsWith("/api/cron/") ||

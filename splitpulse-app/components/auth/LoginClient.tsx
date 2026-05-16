@@ -14,7 +14,7 @@ export function LoginClient() {
   const [error, setError] = useState<string | null>(null);
 
   const finish = () => {
-    router.push(next);
+    router.replace(next);
     router.refresh();
   };
 
@@ -73,45 +73,42 @@ export function LoginClient() {
 
   return (
     <div className="relative w-full max-w-sm">
-      {/* Ambient glow behind the card */}
       <div
         aria-hidden
-        className="absolute -inset-12 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(0,212,255,0.18),transparent_60%)] blur-2xl"
+        className="pointer-events-none absolute -inset-16 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(0,212,255,0.22),transparent_60%)] blur-2xl"
       />
 
-      <div className="glass-panel-heavy p-7 space-y-5">
-        <header className="text-center space-y-3">
-          <div className="flex items-center justify-center gap-2">
-            <span
-              className="inline-block h-3 w-3 rounded-full bg-[var(--pulse-high)]"
-              style={{ boxShadow: "0 0 16px var(--pulse-high)" }}
-            />
-            <span className="text-[10px] uppercase tracking-[0.3em] text-[var(--text-tertiary)]">
-              Split · Live
-            </span>
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight leading-none">
-            SPLIT
-            <span className="ml-2 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--pulse-rising)] bg-clip-text text-transparent">
-              PULSE
-            </span>
-          </h1>
-          <p className="text-sm text-[var(--text-secondary)] leading-snug">
-            A live heat map of the city
-            <br />
-            powered by GPS Instants.
-          </p>
-        </header>
+      <header className="mb-5 text-center">
+        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 backdrop-blur">
+          <span
+            className="h-2 w-2 rounded-full bg-[var(--pulse-high)]"
+            style={{ boxShadow: "0 0 12px var(--pulse-high)" }}
+          />
+          <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/60">
+            Split · Live
+          </span>
+        </div>
+        <h1 className="mt-4 text-4xl font-bold leading-none tracking-tight">
+          SPLIT
+          <span className="ml-2 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--pulse-rising)] bg-clip-text text-transparent">
+            PULSE
+          </span>
+        </h1>
+        <p className="mx-auto mt-3 max-w-[20rem] text-sm leading-snug text-white/55">
+          A live heat map of the city, powered by GPS-anchored Instants.
+        </p>
+      </header>
 
+      <section className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl">
         <button
           onClick={guest}
           disabled={loading !== null}
-          className="w-full rounded-2xl bg-[var(--accent-primary)] py-3 text-sm font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)] transition active:scale-[0.98] disabled:opacity-50"
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent-primary)] py-3 text-sm font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)] transition active:scale-[0.98] disabled:opacity-50"
         >
-          {loading === "guest" ? "Connecting…" : "⚡ Continue as Guest"}
+          {loading === "guest" ? "Connecting…" : "⚡  Continue as Guest"}
         </button>
 
-        <div className="flex items-center gap-3 text-[10px] uppercase tracking-widest text-[var(--text-tertiary)]">
+        <div className="my-4 flex items-center gap-3 text-[10px] font-bold uppercase tracking-[0.28em] text-white/40">
           <span className="h-px flex-1 bg-white/10" />
           or pick a name
           <span className="h-px flex-1 bg-white/10" />
@@ -119,21 +116,24 @@ export function LoginClient() {
 
         <div className="flex gap-2">
           <div className="relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-[var(--text-tertiary)]">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-white/40">
               @
             </span>
             <input
               value={pulseName}
               onChange={(e) => setPulseName(e.target.value.replace(/^@/, ""))}
               placeholder="petar"
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-7 pr-3 text-sm outline-none transition focus:border-[var(--accent-primary)] focus:bg-white/[0.07]"
+              autoCapitalize="off"
+              autoCorrect="off"
+              spellCheck={false}
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3 pl-7 pr-3 text-sm font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-white/35 focus:border-[var(--accent-primary)] focus:bg-white/[0.07]"
               onKeyDown={(e) => e.key === "Enter" && setName()}
             />
           </div>
           <button
             onClick={setName}
             disabled={loading !== null || !pulseName.trim()}
-            className="rounded-2xl bg-white/10 px-5 text-sm font-semibold transition hover:bg-white/15 disabled:opacity-40"
+            className="rounded-2xl bg-white px-5 text-sm font-bold text-[var(--text-inverse)] transition active:scale-[0.98] disabled:bg-white/10 disabled:text-white/40"
           >
             {loading === "name" ? "…" : "Go"}
           </button>
@@ -142,7 +142,7 @@ export function LoginClient() {
         <button
           onClick={google}
           disabled={loading !== null}
-          className="w-full rounded-2xl border border-white/10 bg-white/[0.03] py-3 text-sm font-medium text-[var(--text-primary)] transition hover:bg-white/[0.08] disabled:opacity-50 flex items-center justify-center gap-2"
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] py-3 text-sm font-semibold text-white transition hover:bg-white/[0.08] disabled:opacity-50"
         >
           <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
             <path
@@ -169,15 +169,15 @@ export function LoginClient() {
         </button>
 
         {error && (
-          <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-snug text-red-300">
+          <div className="mt-4 rounded-2xl border border-red-500/30 bg-red-500/10 p-3 text-xs leading-snug text-red-300">
             {error}
           </div>
         )}
+      </section>
 
-        <p className="text-center text-[10px] text-[var(--text-tertiary)]">
-          By continuing you agree this is a hackathon demo.
-        </p>
-      </div>
+      <p className="mt-4 text-center text-[10px] uppercase tracking-[0.24em] text-white/35">
+        Hackathon demo · By continuing you agree
+      </p>
     </div>
   );
 }

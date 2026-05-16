@@ -269,6 +269,8 @@ export function MapClient({
           locations={categoryLocations}
           instants={instants}
           coords={geo.coords}
+          favoriteLocationIds={favoriteLocationIds}
+          onToggleFavorite={toggleFavorite}
           onSelect={(location) => openLocation(location.slug)}
         />
       )}
@@ -278,12 +280,21 @@ export function MapClient({
           locations={locations.filter((location) =>
             favoriteLocationIds.includes(location.id),
           )}
+          instants={instants}
+          coords={geo.coords}
+          onToggleFavorite={toggleFavorite}
           onSelect={(location) => openLocation(location.slug)}
         />
       )}
 
       {activeTab === "profile" && (
-        <ProfileView pulseName={pulseName} userInitial={userInitial} />
+        <ProfileView
+          pulseName={pulseName}
+          userInitial={userInitial}
+          favoritesCount={favoriteLocationIds.length}
+          objectsCount={locations.length}
+          liveInstantsCount={instants.length}
+        />
       )}
 
       {(activeTab === "map" || activeTab === "objects") && (
@@ -495,15 +506,28 @@ function BottomNav({
   );
 }
 
+const PULSE_DOT: Record<string, string> = {
+  high_pulse: "#ff4444",
+  trending: "#ffb800",
+  rising: "#00e88f",
+  active: "#00d4ff",
+  live_event: "#c840ff",
+  quiet: "#4a5568",
+};
+
 function ObjectsListView({
   locations,
   instants,
   coords,
+  favoriteLocationIds,
+  onToggleFavorite,
   onSelect,
 }: {
   locations: Location[];
   instants: Instant[];
   coords: { latitude: number; longitude: number; accuracy: number } | null;
+  favoriteLocationIds: string[];
+  onToggleFavorite: (locationId: string) => void;
   onSelect: (location: Location) => void;
 }) {
   const sortedLocations = [...locations].sort((a, b) => {
@@ -516,44 +540,91 @@ function ObjectsListView({
 
   return (
     <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-3 pb-40 pt-[max(18px,env(safe-area-inset-top))]">
+      <div className="mb-3 px-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
+          {coords ? "Nearby first" : "By pulse"}
+        </p>
+        <h2 className="text-xl font-bold text-white">
+          {sortedLocations.length} objects
+        </h2>
+      </div>
       <div className="space-y-2">
+        {sortedLocations.length === 0 && (
+          <p className="rounded-2xl border border-dashed border-white/10 bg-white/[0.025] px-4 py-6 text-center text-sm text-white/55">
+            No objects in this category.
+          </p>
+        )}
         {sortedLocations.map((location) => {
           const count = instants.filter(
             (instant) => instant.location_id === location.id,
           ).length;
           const distance = coords ? distanceMeters(coords, location) : null;
+          const isFavorite = favoriteLocationIds.includes(location.id);
+          const dot = PULSE_DOT[location.pulse_status] ?? PULSE_DOT.quiet;
           return (
-            <button
+            <div
               key={location.id}
-              type="button"
-              onClick={() => onSelect(location)}
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-left transition active:scale-[0.99]"
+              className="rounded-2xl border border-white/10 bg-white/[0.05] p-4 transition active:scale-[0.99]"
             >
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate text-base font-bold text-white">
-                    {location.name}
-                  </h2>
-                  <p className="mt-1 text-xs text-white/50">
-                    {titleCase(location.type)}
-                    {location.tags.length > 0
-                      ? ` · ${location.tags.slice(0, 2).join(", ")}`
-                      : ""}
-                  </p>
+              <button
+                type="button"
+                onClick={() => onSelect(location)}
+                className="block w-full text-left"
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span
+                        aria-hidden
+                        className="h-2 w-2 shrink-0 rounded-full"
+                        style={{
+                          backgroundColor: dot,
+                          boxShadow: `0 0 8px ${dot}`,
+                        }}
+                      />
+                      <h3 className="truncate text-base font-bold text-white">
+                        {location.name}
+                      </h3>
+                    </div>
+                    <p className="mt-1 text-xs text-white/50">
+                      {titleCase(location.type)}
+                      {location.tags.length > 0
+                        ? ` · ${location.tags.slice(0, 2).join(", ")}`
+                        : ""}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-white/10 px-2 py-1 text-xs font-semibold text-white/70">
+                    {count} live
+                  </span>
                 </div>
-                <span className="rounded-full bg-white/10 px-2 py-1 text-xs font-semibold text-white/70">
-                  {count} live
-                </span>
-              </div>
-              <div className="mt-3 flex items-center justify-between text-xs text-white/50">
-                <span>
-                  {distance === null
-                    ? `Pulse ${location.pulse_score}`
-                    : `${Math.round(distance)}m away`}
-                </span>
-                <span>{titleCase(location.pulse_status)}</span>
-              </div>
-            </button>
+                <div className="mt-3 flex items-center justify-between text-xs text-white/50">
+                  <span>
+                    {distance === null
+                      ? `Pulse ${location.pulse_score}`
+                      : `${Math.round(distance)}m away`}
+                  </span>
+                  <span>{titleCase(location.pulse_status)}</span>
+                </div>
+              </button>
+              <button
+                type="button"
+                aria-label={isFavorite ? "Remove favorite" : "Add favorite"}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onToggleFavorite(location.id);
+                }}
+                className={`mt-3 flex w-full items-center justify-center gap-2 rounded-xl py-2 text-xs font-bold transition ${
+                  isFavorite
+                    ? "bg-white text-[var(--text-inverse)]"
+                    : "bg-white/[0.06] text-white/75 hover:bg-white/[0.12]"
+                }`}
+              >
+                <Heart
+                  className={`h-4 w-4 ${isFavorite ? "fill-current" : ""}`}
+                />
+                {isFavorite ? "Saved" : "Save"}
+              </button>
+            </div>
           );
         })}
       </div>
@@ -563,47 +634,99 @@ function ObjectsListView({
 
 function FavoritesView({
   locations,
+  instants,
+  coords,
+  onToggleFavorite,
   onSelect,
 }: {
   locations: Location[];
+  instants: Instant[];
+  coords: { latitude: number; longitude: number; accuracy: number } | null;
+  onToggleFavorite: (locationId: string) => void;
   onSelect: (location: Location) => void;
 }) {
-  if (locations.length > 0) {
+  if (locations.length === 0) {
     return (
-      <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-3 pb-40 pt-[max(18px,env(safe-area-inset-top))]">
-        <div className="space-y-2">
-          {locations.map((location) => (
-            <button
-              key={location.id}
-              type="button"
-              onClick={() => onSelect(location)}
-              className="flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.05] p-4 text-left"
-            >
-              <span>
-                <span className="block text-base font-bold text-white">
-                  {location.name}
-                </span>
-                <span className="text-xs text-white/50">
-                  {titleCase(location.type)} · Pulse {location.pulse_score}
-                </span>
-              </span>
-              <Heart className="h-5 w-5 fill-white text-white" />
-            </button>
-          ))}
+      <section className="absolute inset-0 z-20 flex bg-deep px-5 pb-40 pt-[max(24px,env(safe-area-inset-top))]">
+        <div className="m-auto max-w-sm text-center">
+          <Heart className="mx-auto h-10 w-10 text-white/35" />
+          <h2 className="mt-4 text-xl font-bold text-white">No favorites yet</h2>
+          <p className="mt-2 text-sm leading-snug text-white/55">
+            Tap the heart on any object in the Objects tab or in a place panel
+            to save it here.
+          </p>
         </div>
       </section>
     );
   }
 
+  const sorted = [...locations].sort((a, b) => {
+    if (coords) return distanceMeters(coords, a) - distanceMeters(coords, b);
+    return a.name.localeCompare(b.name);
+  });
+
   return (
-    <section className="absolute inset-0 z-20 flex bg-deep px-5 pb-40 pt-[max(24px,env(safe-area-inset-top))]">
-      <div className="m-auto max-w-sm text-center">
-        <Heart className="mx-auto h-10 w-10 text-white/35" />
-        <h2 className="mt-4 text-xl font-bold text-white">Favorites</h2>
-        <p className="mt-2 text-sm leading-snug text-white/55">
-          Saved objects will appear here. For now, use the map or object list to
-          inspect live places.
+    <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-3 pb-40 pt-[max(18px,env(safe-area-inset-top))]">
+      <div className="mb-3 px-2">
+        <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
+          Saved
         </p>
+        <h2 className="text-xl font-bold text-white">
+          {sorted.length} favorite{sorted.length === 1 ? "" : "s"}
+        </h2>
+      </div>
+      <div className="space-y-2">
+        {sorted.map((location) => {
+          const count = instants.filter(
+            (instant) => instant.location_id === location.id,
+          ).length;
+          const distance = coords ? distanceMeters(coords, location) : null;
+          const dot = PULSE_DOT[location.pulse_status] ?? PULSE_DOT.quiet;
+          return (
+            <div
+              key={location.id}
+              className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.05] p-3"
+            >
+              <button
+                type="button"
+                onClick={() => onSelect(location)}
+                className="flex min-w-0 flex-1 items-center gap-3 text-left"
+              >
+                <span
+                  aria-hidden
+                  className="grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-white/[0.05]"
+                  style={{ boxShadow: `inset 0 0 0 2px ${dot}` }}
+                >
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: dot, boxShadow: `0 0 8px ${dot}` }}
+                  />
+                </span>
+                <span className="min-w-0">
+                  <span className="block truncate text-base font-bold text-white">
+                    {location.name}
+                  </span>
+                  <span className="text-xs text-white/50">
+                    {titleCase(location.type)}
+                    {" · "}
+                    {distance === null
+                      ? `Pulse ${location.pulse_score}`
+                      : `${Math.round(distance)}m`}
+                    {count > 0 ? ` · ${count} live` : ""}
+                  </span>
+                </span>
+              </button>
+              <button
+                type="button"
+                aria-label="Remove favorite"
+                onClick={() => onToggleFavorite(location.id)}
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-white text-[var(--text-inverse)] transition active:scale-95"
+              >
+                <Heart className="h-4 w-4 fill-current" />
+              </button>
+            </div>
+          );
+        })}
       </div>
     </section>
   );
@@ -612,19 +735,19 @@ function FavoritesView({
 function ProfileView({
   pulseName,
   userInitial,
+  favoritesCount,
+  objectsCount,
+  liveInstantsCount,
 }: {
   pulseName: string | null;
   userInitial: string;
+  favoritesCount: number;
+  objectsCount: number;
+  liveInstantsCount: number;
 }) {
   const router = useRouter();
-  const geo = useGeolocation();
   const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [origin, setOrigin] = useState<string>("…");
-
-  useEffect(() => {
-    if (typeof window !== "undefined") setOrigin(window.location.origin);
-  }, []);
 
   const handleLogout = async () => {
     if (signingOut) return;
@@ -647,64 +770,34 @@ function ProfileView({
   };
 
   return (
-    <section className="absolute inset-0 z-20 bg-deep px-5 pb-40 pt-[max(24px,env(safe-area-inset-top))]">
+    <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-5 pb-40 pt-[max(24px,env(safe-area-inset-top))]">
       <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5">
         <div className="flex items-center gap-4">
-          <div className="grid h-14 w-14 place-items-center rounded-full bg-white/12 text-lg font-bold text-white">
+          <div
+            className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--pulse-rising)] text-2xl font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)]"
+          >
             {pulseName ? pulseName[0]?.toUpperCase() : userInitial.toUpperCase()}
           </div>
-          <div>
-            <p className="text-xs uppercase tracking-[0.22em] text-white/40">
+          <div className="min-w-0">
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
               Profile
             </p>
-            <h2 className="text-xl font-bold text-white">
+            <h2 className="mt-1 truncate text-xl font-bold text-white">
               {pulseName ? `@${pulseName}` : "Guest"}
             </h2>
-          </div>
-        </div>
-        <div className="mt-5 grid grid-cols-2 gap-3 text-center">
-          <div className="rounded-2xl bg-black/25 p-3">
-            <p className="text-lg font-bold text-white">0</p>
-            <p className="text-xs text-white/45">Favorites</p>
-          </div>
-          <div className="rounded-2xl bg-black/25 p-3">
-            <p className="text-lg font-bold text-white">Live</p>
-            <p className="text-xs text-white/45">Map access</p>
+            <p className="mt-1 text-xs text-white/45">
+              {pulseName
+                ? "Pulse name set"
+                : "Guest session — pick a name on login"}
+            </p>
           </div>
         </div>
       </div>
 
-      <div className="mt-5 rounded-2xl border border-white/10 bg-black/30 p-4 text-xs text-white/70">
-        <p className="mb-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/40">
-          GPS diagnostics
-        </p>
-        <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 font-mono break-all">
-          <dt className="text-white/45">origin</dt>
-          <dd>{origin}</dd>
-          <dt className="text-white/45">isSecure</dt>
-          <dd className={geo.isSecure ? "text-emerald-300" : "text-red-300"}>
-            {String(geo.isSecure)}
-          </dd>
-          <dt className="text-white/45">permission</dt>
-          <dd>{geo.permission}</dd>
-          <dt className="text-white/45">loading</dt>
-          <dd>{String(geo.loading)}</dd>
-          <dt className="text-white/45">coords</dt>
-          <dd>
-            {geo.coords
-              ? `${geo.coords.latitude.toFixed(5)}, ${geo.coords.longitude.toFixed(5)} (±${Math.round(geo.coords.accuracy)}m)`
-              : "—"}
-          </dd>
-          <dt className="text-white/45">error</dt>
-          <dd className={geo.error ? "text-red-300" : ""}>{geo.error ?? "—"}</dd>
-        </dl>
-        <button
-          type="button"
-          onClick={() => geo.request()}
-          className="mt-3 w-full rounded-xl bg-[var(--accent-primary)] py-2 text-xs font-bold text-[var(--text-inverse)]"
-        >
-          {geo.loading ? "Retrying…" : "Re-request GPS"}
-        </button>
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        <ProfileStat label="Favorites" value={favoritesCount} />
+        <ProfileStat label="Objects" value={objectsCount} />
+        <ProfileStat label="Live now" value={liveInstantsCount} />
       </div>
 
       <button
@@ -721,5 +814,16 @@ function ProfileView({
         <p className="mt-2 text-center text-xs text-red-300/80">{error}</p>
       )}
     </section>
+  );
+}
+
+function ProfileStat({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 text-center">
+      <p className="text-xl font-bold text-white">{value}</p>
+      <p className="mt-1 text-[10px] uppercase tracking-wider text-white/45">
+        {label}
+      </p>
+    </div>
   );
 }
