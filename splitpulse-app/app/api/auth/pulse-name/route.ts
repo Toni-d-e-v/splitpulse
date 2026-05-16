@@ -20,13 +20,33 @@ export async function POST(req: Request) {
       "INVALID_INPUT",
     );
 
-  const { error } = await supabase
+  // Profile row is bootstrapped by the on_auth_user_created trigger, so an
+  // UPDATE is sufficient — keeps us aligned with the "Users update own
+  // profile" RLS policy. Fall back to insert via service role if the row
+  // is somehow missing.
+  let { error } = await supabase
     .from("profiles")
-    .upsert({ id: user.id, pulse_name: parsed.data.pulse_name });
+    .update({ pulse_name: parsed.data.pulse_name })
+    .eq("id", user.id);
 
-  if (error?.code === "23505")
+  if (!error) {
+    return Response.json({ pulse_name: parsed.data.pulse_name });
+  }
+
+  if (error.code === "23505")
     return errorResponse("Pulse name already taken", "DUP_NAME");
-  if (error) return errorResponse(error.message, "INTERNAL");
 
-  return Response.json({ pulse_name: parsed.data.pulse_name });
+  if (error.code === "PGRST116") {
+    const { createServiceClient } = await import("@/lib/supabase/service");
+    const service = createServiceClient();
+    const { error: insertError } = await service
+      .from("profiles")
+      .insert({ id: user.id, pulse_name: parsed.data.pulse_name });
+    if (insertError?.code === "23505")
+      return errorResponse("Pulse name already taken", "DUP_NAME");
+    if (insertError) return errorResponse(insertError.message, "INTERNAL");
+    return Response.json({ pulse_name: parsed.data.pulse_name });
+  }
+
+  return errorResponse(error.message, "INTERNAL");
 }

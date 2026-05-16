@@ -51,36 +51,19 @@ export function LoginClient() {
   };
 
   return (
-    <div className="relative w-full max-w-sm">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -inset-16 -z-10 rounded-full bg-[radial-gradient(circle_at_center,rgba(0,212,255,0.22),transparent_60%)] blur-2xl"
-      />
-
-      <header className="mb-5 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-black/40 px-3 py-1 backdrop-blur">
-          <span
-            className="h-2 w-2 rounded-full bg-[var(--pulse-high)]"
-            style={{ boxShadow: "0 0 12px var(--pulse-high)" }}
-          />
-          <span className="text-[10px] font-bold uppercase tracking-[0.28em] text-white/60">
-            Split · Live
-          </span>
-        </div>
-        <h1 className="mt-4 text-4xl font-bold leading-none tracking-tight">
-          SPLIT
-          <span className="ml-2 bg-gradient-to-r from-[var(--accent-primary)] to-[var(--pulse-rising)] bg-clip-text text-transparent">
-            PULSE
-          </span>
+    <div className="w-full max-w-sm">
+      <header className="mb-6">
+        <h1 className="text-3xl font-bold leading-none tracking-tight text-white">
+          Split Pulse
         </h1>
-        <p className="mx-auto mt-3 max-w-[20rem] text-sm leading-snug text-white/55">
-          A live heat map of the city, powered by GPS-anchored Instants.
+        <p className="mt-2 text-sm text-white/55">
+          Pick a name to enter.
         </p>
       </header>
 
       <form
         onSubmit={submit}
-        className="rounded-3xl border border-white/10 bg-white/[0.05] p-5 shadow-[0_18px_50px_rgba(0,0,0,0.35)] backdrop-blur-xl"
+        className="rounded-3xl border border-white/10 bg-black/40 p-5"
       >
         <label className="block">
           <span className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">
@@ -98,7 +81,7 @@ export function LoginClient() {
               autoCorrect="off"
               spellCheck={false}
               autoFocus
-              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3.5 pl-9 pr-3 text-base font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-white/35 focus:border-[var(--accent-primary)] focus:bg-white/[0.07]"
+              className="w-full rounded-2xl border border-white/10 bg-white/[0.04] py-3.5 pl-9 pr-3 text-base font-semibold text-white outline-none transition placeholder:font-normal placeholder:text-white/30 focus:border-white/30 focus:bg-white/[0.07]"
             />
           </div>
           <p className="mt-2 text-[11px] text-white/40">
@@ -109,9 +92,9 @@ export function LoginClient() {
         <button
           type="submit"
           disabled={loading || !pulseName.trim()}
-          className="mt-4 flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--accent-primary)] py-3 text-sm font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)] transition active:scale-[0.98] disabled:opacity-50 disabled:shadow-none"
+          className="mt-4 flex w-full items-center justify-center rounded-2xl bg-white py-3 text-sm font-bold text-black transition active:scale-[0.98] disabled:bg-white/10 disabled:text-white/40"
         >
-          {loading ? "Entering…" : "⚡  Enter the pulse"}
+          {loading ? "Entering…" : "Enter"}
         </button>
 
         {error && (
