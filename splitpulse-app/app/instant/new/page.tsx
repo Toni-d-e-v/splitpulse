@@ -9,16 +9,31 @@ export default async function NewInstantPage({
 }) {
   const { location } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("locations_view")
-    .select("*")
-    .order("name", { ascending: true });
+
+  const [{ data: locationsData }, { data: { user } }] = await Promise.all([
+    supabase
+      .from("locations_view")
+      .select("*")
+      .order("name", { ascending: true }),
+    supabase.auth.getUser(),
+  ]);
+
+  let pulseName: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("pulse_name")
+      .eq("id", user.id)
+      .maybeSingle();
+    pulseName = profile?.pulse_name ?? null;
+  }
 
   return (
-    <main className="min-h-screen bg-deep text-[var(--text-primary)] p-4">
+    <main className="min-h-dvh bg-deep text-[var(--text-primary)]">
       <PostInstantClient
-        locations={(data as Location[] | null) ?? []}
+        locations={(locationsData as Location[] | null) ?? []}
         initialLocationSlug={location ?? null}
+        pulseName={pulseName}
       />
     </main>
   );

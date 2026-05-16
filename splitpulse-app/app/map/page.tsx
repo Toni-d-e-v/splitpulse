@@ -21,7 +21,18 @@ export default async function MapPage({
 
   const locations = (locationsData ?? []) as Location[];
   const instants = (instantsData ?? []) as Instant[];
-  const pulseName = user?.user_metadata?.pulse_name ?? null;
+
+  let pulseName: string | null = null;
+  let memberSince: string | null = null;
+  if (user) {
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("pulse_name, created_at")
+      .eq("id", user.id)
+      .maybeSingle();
+    pulseName = profile?.pulse_name ?? null;
+    memberSince = profile?.created_at ?? user.created_at ?? null;
+  }
 
   return (
     <main className="relative isolate h-dvh w-screen overflow-hidden bg-deep">
@@ -40,7 +51,8 @@ export default async function MapPage({
         initialInstants={instants}
         focusSlug={focus ?? null}
         pulseName={pulseName}
-        userInitial={user?.email?.[0] ?? "@"}
+        userInitial={pulseName?.[0] ?? user?.email?.[0] ?? "@"}
+        memberSince={memberSince}
       />
     </main>
   );

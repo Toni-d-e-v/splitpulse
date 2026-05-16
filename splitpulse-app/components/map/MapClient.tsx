@@ -40,6 +40,7 @@ interface Props {
   focusSlug: string | null;
   pulseName: string | null;
   userInitial: string;
+  memberSince: string | null;
 }
 
 function MapLoadingShimmer() {
@@ -102,6 +103,7 @@ export function MapClient({
   focusSlug,
   pulseName,
   userInitial,
+  memberSince,
 }: Props) {
   const {
     instants,
@@ -222,6 +224,14 @@ export function MapClient({
   return (
     <>
       {activeTab === "map" && (
+        <UserChip
+          pulseName={pulseName}
+          userInitial={userInitial}
+          onClick={() => setActiveTab("profile")}
+        />
+      )}
+
+      {activeTab === "map" && (
         <TopSearchBar
           value={searchQuery}
           locations={mapLocations.slice(0, 6)}
@@ -291,6 +301,7 @@ export function MapClient({
         <ProfileView
           pulseName={pulseName}
           userInitial={userInitial}
+          memberSince={memberSince}
           favoritesCount={favoriteLocationIds.length}
           objectsCount={locations.length}
           liveInstantsCount={instants.length}
@@ -732,15 +743,52 @@ function FavoritesView({
   );
 }
 
+function UserChip({
+  pulseName,
+  userInitial,
+  onClick,
+}: {
+  pulseName: string | null;
+  userInitial: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute right-3 top-[calc(max(12px,env(safe-area-inset-top))+58px)] z-50 flex items-center gap-2 rounded-full border border-white/10 bg-black/55 py-1.5 pl-1.5 pr-3 text-xs font-semibold text-white backdrop-blur-xl shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition active:scale-[0.98]"
+    >
+      <span className="grid h-6 w-6 place-items-center rounded-full bg-white text-[11px] font-bold text-black">
+        {pulseName ? pulseName[0]?.toUpperCase() : userInitial.toUpperCase()}
+      </span>
+      <span className="max-w-32 truncate">
+        {pulseName ? `@${pulseName}` : "Guest"}
+      </span>
+    </button>
+  );
+}
+
+function formatMemberSince(iso: string | null): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    year: "numeric",
+  }).format(date);
+}
+
 function ProfileView({
   pulseName,
   userInitial,
+  memberSince,
   favoritesCount,
   objectsCount,
   liveInstantsCount,
 }: {
   pulseName: string | null;
   userInitial: string;
+  memberSince: string | null;
   favoritesCount: number;
   objectsCount: number;
   liveInstantsCount: number;
@@ -771,27 +819,16 @@ function ProfileView({
 
   return (
     <section className="absolute inset-0 z-20 overflow-y-auto bg-deep px-5 pb-40 pt-[max(24px,env(safe-area-inset-top))]">
-      <div className="rounded-3xl border border-white/10 bg-white/[0.05] p-5">
-        <div className="flex items-center gap-4">
-          <div
-            className="grid h-16 w-16 place-items-center rounded-full bg-gradient-to-br from-[var(--accent-primary)] to-[var(--pulse-rising)] text-2xl font-bold text-[var(--text-inverse)] shadow-[0_0_24px_rgba(0,212,255,0.35)]"
-          >
-            {pulseName ? pulseName[0]?.toUpperCase() : userInitial.toUpperCase()}
-          </div>
-          <div className="min-w-0">
-            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
-              Profile
-            </p>
-            <h2 className="mt-1 truncate text-xl font-bold text-white">
-              {pulseName ? `@${pulseName}` : "Guest"}
-            </h2>
-            <p className="mt-1 text-xs text-white/45">
-              {pulseName
-                ? "Pulse name set"
-                : "Guest session — pick a name on login"}
-            </p>
-          </div>
+      <div className="rounded-3xl border border-white/10 bg-black/40 p-6 text-center">
+        <div className="mx-auto grid h-24 w-24 place-items-center rounded-full bg-white text-4xl font-bold text-black">
+          {pulseName ? pulseName[0]?.toUpperCase() : userInitial.toUpperCase()}
         </div>
+        <h2 className="mt-4 text-2xl font-bold text-white">
+          {pulseName ? `@${pulseName}` : "Guest"}
+        </h2>
+        <p className="mt-1 text-xs text-white/45">
+          Member since {formatMemberSince(memberSince)}
+        </p>
       </div>
 
       <div className="mt-3 grid grid-cols-3 gap-2">
@@ -800,6 +837,15 @@ function ProfileView({
         <ProfileStat label="Live now" value={liveInstantsCount} />
       </div>
 
+      <ProfileSection title="Account">
+        <ProfileRow
+          label="Pulse name"
+          value={pulseName ? `@${pulseName}` : "—"}
+        />
+        <ProfileRow label="Member since" value={formatMemberSince(memberSince)} />
+        <ProfileRow label="Session" value="Anonymous · No password" />
+      </ProfileSection>
+
       <button
         type="button"
         onClick={handleLogout}
@@ -807,7 +853,7 @@ function ProfileView({
         className="mt-5 flex w-full items-center justify-center gap-2 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm font-bold text-red-300 transition active:scale-[0.99] disabled:opacity-50"
       >
         <LogOut className="h-4 w-4" />
-        {signingOut ? "Signing out..." : "Logout"}
+        {signingOut ? "Signing out…" : "Logout"}
       </button>
 
       {error && (
@@ -824,6 +870,34 @@ function ProfileStat({ label, value }: { label: string; value: number }) {
       <p className="mt-1 text-[10px] uppercase tracking-wider text-white/45">
         {label}
       </p>
+    </div>
+  );
+}
+
+function ProfileSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="mt-5">
+      <p className="px-2 text-[10px] font-bold uppercase tracking-[0.24em] text-white/40">
+        {title}
+      </p>
+      <div className="mt-2 divide-y divide-white/5 overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04]">
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function ProfileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 px-4 py-3 text-sm">
+      <span className="text-white/55">{label}</span>
+      <span className="min-w-0 truncate font-semibold text-white">{value}</span>
     </div>
   );
 }
