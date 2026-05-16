@@ -10,7 +10,6 @@ import {
   LogOut,
   Map,
   MapPin,
-  MessageSquare,
   Search,
   User,
   X,
@@ -238,28 +237,6 @@ export function MapClient({
           locations={mapLocations.slice(0, 6)}
           onChange={setSearchQuery}
           onClear={() => setSearchQuery("")}
-          onAskAi={async (query) => {
-            const response = await fetch("/api/ai/find-object", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ query }),
-            });
-            const json = (await response.json()) as {
-              slug?: string;
-              reason?: string;
-              error?: string;
-            };
-            if (!response.ok || !json.slug) {
-              throw new Error(json.error ?? "No object found.");
-            }
-            const match = locations.find(
-              (location) => location.slug === json.slug,
-            );
-            if (!match) throw new Error("Matched object is not available.");
-            setSearchQuery(match.name);
-            openLocation(match.slug);
-            return json.reason ?? `Found ${match.name}`;
-          }}
           onSelect={(location) => {
             openLocation(location.slug);
           }}
@@ -347,34 +324,16 @@ function TopSearchBar({
   locations,
   onChange,
   onClear,
-  onAskAi,
   onSelect,
 }: {
   value: string;
   locations: Location[];
   onChange: (value: string) => void;
   onClear: () => void;
-  onAskAi: (query: string) => Promise<string>;
   onSelect: (location: Location) => void;
 }) {
   const router = useRouter();
   const showResults = value.trim().length > 0;
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiMessage, setAiMessage] = useState<string | null>(null);
-
-  const askAi = async () => {
-    if (value.trim().length < 2 || aiLoading) return;
-    setAiLoading(true);
-    setAiMessage(null);
-    try {
-      const message = await onAskAi(value.trim());
-      setAiMessage(message);
-    } catch (error) {
-      setAiMessage(error instanceof Error ? error.message : "No object found.");
-    } finally {
-      setAiLoading(false);
-    }
-  };
 
   const openChat = () => {
     const q = value.trim();
@@ -403,50 +362,30 @@ function TopSearchBar({
         )}
         <button
           type="button"
-          onClick={askAi}
-          disabled={value.trim().length < 2 || aiLoading}
-          className="grid h-8 min-w-8 place-items-center rounded-full bg-[var(--accent-primary)] text-[var(--text-inverse)] disabled:opacity-40"
-          aria-label="Ask AI to find object"
+          onClick={openChat}
+          className="flex h-8 items-center gap-1.5 rounded-full bg-[var(--accent-primary)] px-3 text-xs font-bold text-[var(--text-inverse)]"
+          aria-label="Ask Pulse AI"
         >
           <Bot className="h-4 w-4" />
-        </button>
-        <button
-          type="button"
-          onClick={openChat}
-          className="grid h-8 min-w-8 place-items-center rounded-full bg-white/10 text-white"
-          aria-label="Open Pulse AI chat"
-        >
-          <MessageSquare className="h-4 w-4" />
+          Ask AI
         </button>
       </div>
 
       {showResults && (
         <div className="mt-2 max-h-72 overflow-y-auto rounded-2xl border border-white/10 bg-black/75 p-1 backdrop-blur-xl">
-          {aiMessage && (
-            <div className="mb-1 rounded-xl bg-white/10 px-3 py-2 text-xs text-white/70">
-              {aiMessage}
-            </div>
-          )}
-          <button
-            type="button"
-            onClick={askAi}
-            disabled={aiLoading}
-            className="mb-1 flex w-full items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-3 py-2 text-left text-sm font-bold text-[var(--text-inverse)] disabled:opacity-60"
-          >
-            <Bot className="h-4 w-4" />
-            {aiLoading ? "Finding..." : `Ask AI: "${value.trim()}"`}
-          </button>
           <button
             type="button"
             onClick={openChat}
-            className="mb-1 flex w-full items-center gap-2 rounded-xl bg-white/10 px-3 py-2 text-left text-sm font-semibold text-white"
+            className="mb-1 flex w-full items-center gap-2 rounded-xl bg-[var(--accent-primary)] px-3 py-2 text-left text-sm font-bold text-[var(--text-inverse)]"
           >
-            <MessageSquare className="h-4 w-4" />
-            Continue in chat
+            <Bot className="h-4 w-4" />
+            <span className="min-w-0 truncate">
+              Ask Pulse AI: &ldquo;{value.trim()}&rdquo;
+            </span>
           </button>
           {locations.length === 0 ? (
             <div className="px-3 py-3 text-sm text-white/55">
-              No objects found.
+              No direct match. Ask Pulse AI to find it.
             </div>
           ) : (
             locations.map((location) => (
